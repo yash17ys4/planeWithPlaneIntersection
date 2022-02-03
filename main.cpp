@@ -52,7 +52,7 @@ bool planeWithPlaneIntersection(Eigen::Vector4d &plane_a, Eigen::Vector4d &plane
 	// If is almost 1, then the planes are parallel
 	// Hence, no intersection
 	double dotProduct = n0.dot(n1);
-	if(dotProduct > 1 - sin(angular_tolerance)) {
+	if(std::abs(dotProduct) > 1 - sin(std::abs(angular_tolerance))) {
 		return false;
 	}
 
@@ -131,7 +131,7 @@ int main() {
 		}
 
 		// Running for test cases
-		int testCases;
+		int testCases, testPassed = 0;
 		file>>testCases;
 		for(int t = 0; t < testCases; t++) {
 			bool isEquation = false;
@@ -154,14 +154,26 @@ int main() {
 			}
 			myIntersect = planeWithPlaneIntersection(plane0, plane1, myLine);
 			PCLIntersect = pcl::planeWithPlaneIntersection(plane0, plane1, PCLLine);
-			if(!(myIntersect ^ PCLIntersect) & isSameLine(myLine, PCLLine)) {
-				std::cout<<"Test case # "<<t+1<<" passed"<<std::endl;
+			if(myIntersect && PCLIntersect && isSameLine(myLine, PCLLine)) {
+				std::cout<<"Test case passed"<<std::endl;
 				std::cout<<myLine.transpose()<<std::endl;
 				std::cout<<PCLLine.transpose()<<std::endl;
+				testPassed++;
+			} else if(myIntersect && !PCLIntersect) {
+				std::cout<<"Test case failed"<<std::endl;
+				std::cout<<"My result: ";
+				std::cout<<myLine.transpose()<<std::endl;
+			} else if(!myIntersect && PCLIntersect) {
+				std::cout<<"Test case failed"<<std::endl;
+				std::cout<<"PCL's result: ";
+				std::cout<<PCLLine.transpose()<<std::endl;
 			} else {
-				std::cout<<"Test case # "<<t+1<<" failed"<<std::endl;
+				std::cout<<"Test case passed"<<std::endl;
+				std::cout<<"The planes are parallel"<<std::endl;
+				testPassed++;
 			}
 		}
+		std::cout<<"Test cases passed "<<testPassed<<"/"<<testCases<<std::endl;
 	} else {
 		// Taking input from the user
 		// user input x y z coordinates for six points
@@ -183,33 +195,22 @@ int main() {
 		plane1 = equationOfPlane(x10, y10, z10, x11, y11, z11, x12, y12, z12);
 		myIntersect = planeWithPlaneIntersection(plane0, plane1, myLine);
 		PCLIntersect = pcl::planeWithPlaneIntersection(plane0, plane1, PCLLine);
-		if(!(myIntersect ^ PCLIntersect) & isSameLine(myLine, PCLLine)) {
-			std::cout<<"Correct answer"<<std::endl;
+		if(myIntersect && PCLIntersect && isSameLine(myLine, PCLLine)) {
+			std::cout<<"Test case passed"<<std::endl;
 			std::cout<<myLine.transpose()<<std::endl;
 			std::cout<<PCLLine.transpose()<<std::endl;
-		} else {
+		} else if(myIntersect && !PCLIntersect) {
 			std::cout<<"Test case failed"<<std::endl;
+			std::cout<<"My result: ";
+			std::cout<<myLine.transpose()<<std::endl;
+		} else if(!myIntersect && PCLIntersect) {
+			std::cout<<"Test case failed"<<std::endl;
+			std::cout<<"PCL's result: ";
+			std::cout<<PCLLine.transpose()<<std::endl;
+		} else {
+			std::cout<<"Test case passed"<<std::endl;
+			std::cout<<"The planes are parallel"<<std::endl;
 		}
 	}
-
-	// std::cout<<line_dir<<std::endl;
-	// std::cout<<line<<std::endl;
-
-	// Finding the point on the line of intersection
-	// if(abs(line_dir.norm()) < 1e-3) {
-	// 	std::cout<<"The planes are parallel"<<std::endl;
-	// 	std::cout<<"There is no line of intersection"<<std::endl;
-	// } else {
-	// 	double z = (n1(0)*d0 - n0(0)*d1) / (n1(0)*n0(2) - n0(0)*n1(2));
-	// 	double y = 0;
-	// 	double x = (d0 - n0(2)*y) / n0(0);
-
-	// 	std::cout<<"The point along the line of intersection is: "<<std::endl;
-	// 	std::cout<<"pt = ("<<x<<", "<<y<<", "<<z<<")"<<std::endl;
-	// 	std::cout<<"The direction cosine along the line of intersection is: "<<std::endl;
-	// 	std::cout<<line_dir<<std::endl;
-	// 	std::cout<<"Pcl's answer: "<<std::endl;
-	// 	std::cout<<line<<std::endl;
-	// }
 	return 0;
 }
