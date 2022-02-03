@@ -9,15 +9,16 @@
 #include <Eigen/Dense>
 #include <pcl/common/intersections.h>
 
+// Checks whether the line are same or not
 bool isSameLine(Eigen::VectorXd &line1, Eigen::VectorXd &line2) {
 	Eigen::Matrix<double, 3, 3> A;
 	A << line1(0)-line2(0), line1(1)-line2(1), line1(2)-line2(2),
 		 line1(3), line1(4), line1(5),
 		 line2(3), line2(4), line2(5);
-	
+	// If all three vectors are along the same direction then
+	// their Matrix would have rank 1
 	Eigen::FullPivLU<Eigen::Matrix3d> lu_decomp(A);
 	auto rankVal = lu_decomp.rank();
-
 	return rankVal == 1;
 }
 
@@ -25,17 +26,14 @@ bool isSameLine(Eigen::VectorXd &line1, Eigen::VectorXd &line2) {
 Eigen::Vector4d equationOfPlane(double x1, double y1, double z1,
 								double x2, double y2, double z2,
 								double x3, double y3, double z3) {
-	
 	// Finding the direction cosines for the normals
 	Eigen::Vector3d lineInPlane1(x2 - x1, y2 - y1, z2 - z1);
 	Eigen::Vector3d lineInPlane2(x3 - x1, y3 - y1, z3 - z1);
 	Eigen::Vector3d normal = lineInPlane1.cross(lineInPlane2);
 	normal.normalize();
-	
 	// Finding the constant in the lines equation ax + by + cz + d = 0
 	Eigen::Vector3d pt0(x1, y1, z1);
 	double d = 0 - pt0.dot(normal);
-
 	double a = normal(0), b = normal(1), c = normal(2);
 	Eigen::Vector4d v(a, b, c, d);
 	return v;
@@ -61,7 +59,6 @@ bool planeWithPlaneIntersection(Eigen::Vector4d &plane_a, Eigen::Vector4d &plane
 	// Direction cosines of line of intersection is cross product
 	Eigen::Vector3d line_direction = n0.cross(n1);
 	line_direction.normalized();
-
 	// Modifying the argument meant for result
 	line.resize(6);
 	line(3) = line_direction(0),
@@ -94,7 +91,6 @@ bool planeWithPlaneIntersection(Eigen::Vector4d &plane_a, Eigen::Vector4d &plane
 		line(1) = p(1);
 		line(2) = 0;
 	}
-
 	// Intersection exists
 	return true;
 }
