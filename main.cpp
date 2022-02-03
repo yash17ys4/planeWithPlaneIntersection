@@ -9,6 +9,18 @@
 #include <Eigen/Dense>
 #include <pcl/common/intersections.h>
 
+bool isSameLine(Eigen::VectorXd &line1, Eigen::VectorXd &line2) {
+	Eigen::Matrix<double, 3, 3> A;
+	A << line1(0)-line2(0), line1(1)-line2(1), line1(2)-line2(2),
+		 line1(3), line1(4), line1(5),
+		 line2(3), line2(4), line2(5);
+	
+	Eigen::FullPivLU<Eigen::Matrix3d> lu_decomp(A);
+	auto rankVal = lu_decomp.rank();
+
+	return rankVal == 1;
+}
+
 // Finding coefficients if three points are given
 Eigen::Vector4d equationOfPlane(double x1, double y1, double z1,
 								double x2, double y2, double z2,
@@ -48,12 +60,40 @@ bool planeWithPlaneIntersection(Eigen::Vector4d &plane_a, Eigen::Vector4d &plane
 
 	// Direction cosines of line of intersection is cross product
 	Eigen::Vector3d line_direction = n0.cross(n1);
-	
+	line_direction.normalized();
+
 	// Modifying the argument meant for result
 	line.resize(6);
 	line(3) = line_direction(0),
 	line(4) = line_direction(1),
 	line(5) = line_direction(2);
+
+	// Finding the point
+	Eigen::Matrix<double, 2, 2> A;
+	Eigen::Matrix<double, 2, 1> B, p;
+	B << -plane_a(3), -plane_b(3);
+	if(line(3) > line(4) && line(3) > line(5)) {
+		A << plane_a(1), plane_a(2),
+			plane_b(1), plane_b(2);
+		p = A.inverse() * B;
+		line(0) = 0;
+		line(1) = p(0);
+		line(2) = p(1);
+	} else if(line(4) > line(3) && line(4) > line(5)) {
+		A << plane_a(0), plane_a(2),
+			plane_b(0), plane_b(2);
+		p = A.inverse() * B;
+		line(0) = p(0);
+		line(1) = 0;
+		line(2) = p(1);
+	} else {
+		A << plane_a(0), plane_a(1),
+			plane_b(0), plane_b(1);
+		p = A.inverse() * B;
+		line(0) = p(0);
+		line(1) = p(1);
+		line(2) = 0;
+	}
 
 	// Intersection exists
 	return true;
@@ -118,12 +158,12 @@ int main() {
 			}
 			myIntersect = planeWithPlaneIntersection(plane0, plane1, myLine);
 			PCLIntersect = pcl::planeWithPlaneIntersection(plane0, plane1, PCLLine);
-			if(myIntersect ^ PCLIntersect) {
-				std::cout<<"Test case # "<<t+1<<" failed"<<std::endl;
-			} else {
+			if(!(myIntersect ^ PCLIntersect) & isSameLine(myLine, PCLLine)) {
+				std::cout<<"Test case # "<<t+1<<" passed"<<std::endl;
 				std::cout<<myLine.transpose()<<std::endl;
 				std::cout<<PCLLine.transpose()<<std::endl;
-				std::cout<<"Test case passed"<<std::endl;
+			} else {
+				std::cout<<"Test case # "<<t+1<<" failed"<<std::endl;
 			}
 		}
 	} else {
@@ -147,11 +187,12 @@ int main() {
 		plane1 = equationOfPlane(x10, y10, z10, x11, y11, z11, x12, y12, z12);
 		myIntersect = planeWithPlaneIntersection(plane0, plane1, myLine);
 		PCLIntersect = pcl::planeWithPlaneIntersection(plane0, plane1, PCLLine);
-		if(myIntersect ^ PCLIntersect) {
-			std::cout<<"Wrong result from my method"<<std::endl;
-		} else {
+		if(!(myIntersect ^ PCLIntersect) & isSameLine(myLine, PCLLine)) {
+			std::cout<<"Correct answer"<<std::endl;
 			std::cout<<myLine.transpose()<<std::endl;
 			std::cout<<PCLLine.transpose()<<std::endl;
+		} else {
+			std::cout<<"Test case failed"<<std::endl;
 		}
 	}
 
